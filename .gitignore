@@ -1,0 +1,10 @@
+*.egg
+.idea
+.eggs
+*.egg-info
+/models
+__pycache__
+*.pyc
+data
+.pytest_cache
+*.7z
