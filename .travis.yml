@@ -12,12 +12,9 @@ matrix:
 
 install:
   - python setup.py -q install
-  - pip install pylint pydocstyle pytest pytest-cov coveralls
+  - pip install pylint pydocstyle pycodestyle
 
 script:
-  - python -m pytest --cov=pyfn tests/
-  - pylint pyfn
-  - pydocstyle pyfn
-
-after_success:
-  - coveralls
+  - pylint witokit
+  - pydocstyle witokit
+  - pycodestyle witokit
