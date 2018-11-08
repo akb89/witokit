@@ -1,0 +1,17 @@
+version: 1
+formatters:
+  brief:
+    format: '%(levelname)s - %(message)s'
+  simple:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+loggers:
+  witokit.main:
+    level: INFO
+    handlers: [console]
+  witokit.utils:
+    level: INFO
+    handlers: [console]

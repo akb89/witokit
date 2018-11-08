@@ -22,8 +22,8 @@ setup(
     license='MIT',
     keywords=['wikipedia', 'dump', 'tokenization', 'nlp'],
     platforms=['any'],
-    packages=['nonce2vec', 'nonce2vec.utils', 'nonce2vec.models',
-              'nonce2vec.exceptions', 'nonce2vec.logging'],
+    packages=['witokit', 'witokit.utils', 'witokit.exceptions',
+              'witokit.logging'],
     package_data={'witokit': ['logging/*.yml']},
     include_package_data=True,
     entry_points={
