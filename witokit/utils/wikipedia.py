@@ -9,7 +9,7 @@ import logging
 import spacy
 import wikiextractor
 
-import nonce2vec.utils.files as futils
+import witokit.utils.files as futils
 
 logger = logging.getLogger(__name__)
 
