@@ -4,7 +4,14 @@ import os
 import natsort
 
 __all__ = ('get_input_filepaths', 'get_output_filepath',
-           'get_tmp_filepaths', 'get_tmp_dirpath')
+           'get_tmp_filepaths', 'get_tmp_dirpath',
+           'get_download_output_filepath')
+
+
+def get_download_output_filepath(output_dirpath, href):
+    """Return concatenation of output_dirpath and href."""
+    os.makedirs(output_dirpath, exist_ok=True)
+    return os.path.join(output_dirpath, href)
 
 
 def get_tmp_dirpath(output_txt_filepath):

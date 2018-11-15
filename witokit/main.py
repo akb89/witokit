@@ -4,15 +4,21 @@ This is the entry point of the application.
 """
 
 import os
+import sys
 import argparse
 import multiprocessing
+import urllib
 import functools
 import shutil
+import re
 import logging
 import logging.config
 
+from bs4 import BeautifulSoup
+
 import witokit.utils.config as cutils
 import witokit.utils.files as futils
+import witokit.utils.urls as uutils
 import witokit.utils.wikipedia as wutils
 
 logging.config.dictConfig(
@@ -22,7 +28,62 @@ logging.config.dictConfig(
 logger = logging.getLogger(__name__)
 
 
+def _download_href(output_dirpath, wiki_dump_url, href):
+    url = uutils.get_wiki_arxiv_url(wiki_dump_url, href)
+    logger.info('Downloading {}'.format(url))
+    output_filepath = futils.get_download_output_filepath(output_dirpath,
+                                                          href)
+    try:
+        urllib.request.urlretrieve(url, output_filepath)
+    except urllib.error.HTTPError:
+        logger.error('Could not download archive from {}'.format(url))
+        sys.exit(1)
+
+
+def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
+                       output_dirpath):
+    with multiprocessing.Pool(num_threads) as pool:
+        _download_href_to_output_dir = functools.partial(_download_href,
+                                                         output_dirpath,
+                                                         wiki_dump_url)
+        list(pool.imap_unordered(_download_href_to_output_dir,
+                                 wiki_arxiv_hrefs))
+
+
+def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
+    wiki_arxiv_hrefs = []
+    try:
+        response = urllib.request.urlopen(wiki_dump_url)
+        html_doc = response.read()
+        soup = BeautifulSoup(html_doc, 'html.parser')
+        for link in soup.find_all('a'):
+            pattern = uutils.get_wikipedia_pattern(lang, date)
+            href = link.get('href')
+            if re.match(pattern, href):
+                wiki_arxiv_hrefs.append(href)
+    except urllib.error.HTTPError:
+        logger.error('HTTPError using lang = \'{}\' and date = \'{}\'. '
+                     'Could not retrieve any Wikipedia data at URL = {}'
+                     .format(lang, date, wiki_dump_url))
+        sys.exit(1)
+    return wiki_arxiv_hrefs
+
+
+def _download(args):
+    wiki_dump_url = uutils.get_wikipedia_dump_url(args.lang, args.date)
+    logger.info('Downloading Wikipedia .bz2 archives from {}'
+                .format(wiki_dump_url))
+    wiki_arxiv_hrefs = _collect_wiki_arxiv_hrefs(wiki_dump_url, args.lang,
+                                                 args.date)
+    _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, args.num_threads,
+                       args.output)
+
+
 def _extract(args):
+    pass
+
+
+def _process(args):
     logger.info('Extracting content of wikipedia archive under {}'
                 .format(args.wiki_input_dirpath))
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
@@ -53,18 +114,38 @@ def main():
     """Launch WiToKit."""
     parser = argparse.ArgumentParser(prog='witokit')
     subparsers = parser.add_subparsers()
+    parser_download = subparsers.add_parser(
+        'download', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help='download a given .bz2-compressed Wikipedia XML dump')
+    parser_download.set_defaults(func=_download)
+    parser_download.add_argument('-l', '--lang', default='en',
+                                 help='the language ISO code of the '
+                                      'Wikipedia dump to download')
+    parser_download.add_argument('-d', '--date',
+                                 default='latest',
+                                 help='the date of the Wikipedia dump to '
+                                      'download')
+    parser_download.add_argument('-o', '--output', required=True,
+                                 help='absolute path to output directory '
+                                      'where to save downloaded files')
+    parser_download.add_argument('-n', '--num-threads', type=int, default=2,
+                                 help='number of threads to use')
     parser_extract = subparsers.add_parser(
-        'extract', formatter_class=argparse.RawTextHelpFormatter,
-        help='extract content from Wikipedia XML dump')
+        'extract', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help='extract content of Wikipedia .bz2 archives')
     parser_extract.set_defaults(func=_extract)
-    parser_extract.add_argument('-i', '--input', required=True,
+    parser_process = subparsers.add_parser(
+        'process', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help='(pre-)process content of a Wikipedia XML dump')
+    parser_process.set_defaults(func=_extract)
+    parser_process.add_argument('-i', '--input', required=True,
                                 dest='wiki_input_dirpath',
                                 help='absolute path to directory containing '
                                      'Wikipedia XML files')
-    parser_extract.add_argument('-o', '--output', required=True,
+    parser_process.add_argument('-o', '--output', required=True,
                                 dest='wiki_output_filepath',
                                 help='absolute path to output .txt file')
-    parser_extract.add_argument('-n', '--num_threads', type=int,
+    parser_process.add_argument('-n', '--num_threads', type=int,
                                 required=False, default=1,
                                 dest='num_threads',
                                 help='number of CPU threads to be used')

@@ -9,17 +9,35 @@ pip install witokit
 
 ## Use
 
-### Download Wikipedia dump
+### Download
+To download a .bz2-compressed Wikipedia XML dump, do:
+```bash
 
+```
+
+if you prefer to use the shell (on UNIX), you can also do:
 ```bash
 wget -r -np -nH --cut-dirs=2 -R "index.html*" --accept-regex="https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles[0-9]+.xml.*bz2\$" https://dumps.wikimedia.org/enwiki/latest/
 ```
 
+
+### Extract
+To extract the content of the .bz2 archives, do:
+
+```bash
+
+```
+
+On UNIX, you can also use pbzip2 extract the content of an archive in parrallel:
 ```bash
 find /abs/path/to/data/wikipedia/201XXXXX -type f -name "*.bz2" | xargs -n1 -I file pbzip2 -p55 -d file
 ```
 
-### Extract
+### Process
+To (pre-)process the content of the extracted archive (tokenize and lowercase)
+with spacy, do:
+
+### ___
 Extract the content of the downloaded XML files into a single .txt file,
 once sentence per line, tokenized with spacy.io, and lowercased.
 
