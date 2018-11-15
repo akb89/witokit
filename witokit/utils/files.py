@@ -5,7 +5,13 @@ import natsort
 
 __all__ = ('get_input_filepaths', 'get_output_filepath',
            'get_tmp_filepaths', 'get_tmp_dirpath',
-           'get_download_output_filepath')
+           'get_download_output_filepath', 'get_bz2_arxivs')
+
+
+def get_bz2_arxivs(dirpath):
+    """Return a list of absolute .bz2 filepaths from a given dirpath."""
+    return [os.path.join(dirpath, filename) for filename in
+            os.listdir(dirpath) if '.bz2' in filename]
 
 
 def get_download_output_filepath(output_dirpath, href):

@@ -15,7 +15,8 @@ To download a .bz2-compressed Wikipedia XML dump, do:
 
 ```
 
-if you prefer to use the shell (on UNIX), you can also do:
+if you want to have a full download progress bar you can always use the shell
+(on UNIX), with:
 ```bash
 wget -r -np -nH --cut-dirs=2 -R "index.html*" --accept-regex="https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles[0-9]+.xml.*bz2\$" https://dumps.wikimedia.org/enwiki/latest/
 ```

@@ -11,6 +11,7 @@ import urllib
 import functools
 import shutil
 import re
+import bz2
 import logging
 import logging.config
 
@@ -46,8 +47,13 @@ def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
         _download_href_to_output_dir = functools.partial(_download_href,
                                                          output_dirpath,
                                                          wiki_dump_url)
-        list(pool.imap_unordered(_download_href_to_output_dir,
-                                 wiki_arxiv_hrefs))
+        total_arxivs = len(wiki_arxiv_hrefs)
+        arxiv_num = 0
+        for _ in pool.imap_unordered(_download_href_to_output_dir,
+                                     wiki_arxiv_hrefs):
+            arxiv_num += 1
+            logger.info('Downloaded {}/{} archives'.format(arxiv_num,
+                                                           total_arxivs))
 
 
 def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
@@ -79,8 +85,26 @@ def _download(args):
                        args.output)
 
 
+def _decompress_arxiv(arxiv):
+    inc_decompressor = bz2.BZ2Decompressor()
+    logger.info('Extracting archive {}'.format(arxiv))
+    output_arxiv_filepath = arxiv.rsplit('.bz2')[0]
+    with open(arxiv, 'rb') as arxiv_byte_stream:
+        with open(output_arxiv_filepath, 'w', encoding='UTF-8') as out_stream:
+            for data in iter(lambda: arxiv_byte_stream.read(100 * 1024), b''):
+                print(inc_decompressor.decompress(data), file=out_stream)
+
+
 def _extract(args):
-    pass
+    logger.info('Extracting .bz2 files from {}'.format(args.bz2_input_dirpath))
+    bz2_arxivs = futils.get_bz2_arxivs(args.bz2_input_dirpath)
+    total_arxivs = len(bz2_arxivs)
+    arxiv_num = 0
+    with multiprocessing.Pool(args.num_threads) as pool:
+        for _ in pool.imap_unordered(_decompress_arxiv, bz2_arxivs):
+            arxiv_num += 1
+            logger.info('Extracted {}/{} archives'.format(arxiv_num,
+                                                          total_arxivs))
 
 
 def _process(args):
@@ -121,19 +145,24 @@ def main():
     parser_download.add_argument('-l', '--lang', default='en',
                                  help='the language ISO code of the '
                                       'Wikipedia dump to download')
-    parser_download.add_argument('-d', '--date',
-                                 default='latest',
+    parser_download.add_argument('-d', '--date', default='latest',
                                  help='the date of the Wikipedia dump to '
                                       'download')
     parser_download.add_argument('-o', '--output', required=True,
                                  help='absolute path to output directory '
                                       'where to save downloaded files')
-    parser_download.add_argument('-n', '--num-threads', type=int, default=2,
-                                 help='number of threads to use')
+    parser_download.add_argument('-n', '--num-threads', type=int, default=1,
+                                 help='number of CPU threads to use')
     parser_extract = subparsers.add_parser(
         'extract', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help='extract content of Wikipedia .bz2 archives')
     parser_extract.set_defaults(func=_extract)
+    parser_extract.add_argument('-i', '--input', required=True,
+                                dest='bz2_input_dirpath',
+                                help='absolute path to directory containing '
+                                     'Wikipedia .bz2 archives')
+    parser_extract.add_argument('-n', '--num-threads', type=int, default=1,
+                                help='number of CPU threads to use')
     parser_process = subparsers.add_parser(
         'process', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help='(pre-)process content of a Wikipedia XML dump')
@@ -145,9 +174,7 @@ def main():
     parser_process.add_argument('-o', '--output', required=True,
                                 dest='wiki_output_filepath',
                                 help='absolute path to output .txt file')
-    parser_process.add_argument('-n', '--num_threads', type=int,
-                                required=False, default=1,
-                                dest='num_threads',
+    parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
     args = parser.parse_args()
     args.func(args)
