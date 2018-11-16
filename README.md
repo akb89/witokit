@@ -46,6 +46,8 @@ The `--date` parameter expects a string corresponding to one of the dates
 found under the Wikimedia dump site corresponding to a given Wikipedia dump
 (e.g. https://dumps.wikimedia.org/enwiki/ for the English Wikipedia).
 
+**Important** Keep num-threads <= 3 to avoid rejection from Wikimedia servers
+
 ### Extract
 To extract the content of the downloaded .bz2 archives, do:
 
