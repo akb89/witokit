@@ -1,4 +1,9 @@
 # WiToKit
+[![GitHub release][release-image]][release-url]
+[![PyPI release][pypi-image]][pypi-url]
+[![Build][travis-image]][travis-url]
+[![MIT License][license-image]][license-url]
+
 Welcome to `WiToKit`, a Python toolkit to download and generate
 preprocessed Wikipedia dumps for NLP in a single .txt file, one
 sentence per line.
@@ -52,5 +57,16 @@ witokit process \
   --input /abs/path/to/wikipedia/extracted/xml/archives \
   --output /abs/path/to/single/output/txt/file \
   --lower \  # if set, will lowercase text
-  --num-threads num_threads
+  --num-threads num_cpu_threads
 ```
+
+[release-image]:https://img.shields.io/github/release/akb89/witokit.svg?style=flat-square
+[release-url]:https://github.com/akb89/witokit/releases/latest
+[pypi-image]:https://img.shields.io/pypi/v/witokit.svg?style=flat-square
+[pypi-url]:https://pypi.org/project/witokit/
+[travis-image]:https://img.shields.io/travis/akb89/witokit.svg?style=flat-square
+[travis-url]:https://travis-ci.org/akb89/witokit
+[license-image]:http://img.shields.io/badge/license-MIT-000000.svg?style=flat-square
+[license-url]:LICENSE.txt
+[req-url]:https://requires.io/github/akb89/witokit/requirements/?branch=master
+[req-image]:https://img.shields.io/requires/github/akb89/witokit.svg?style=flat-square

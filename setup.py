@@ -11,7 +11,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='witokit',
-    description='A python module to generate a tokenized dump of Wikipedia',
+    description='A python module to generate a tokenized dump of Wikipedia for NLP',
     author='Alexandre Kabbach',
     author_email='akb@3azouz.net',
     long_description=long_description,
