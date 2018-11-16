@@ -8,3 +8,5 @@ __pycache__
 data
 .pytest_cache
 *.7z
+RELEASE.md
+dist/
