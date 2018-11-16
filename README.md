@@ -12,8 +12,13 @@ sentence per line.
 
 ## Install
 
-```
+```bash
 pip3 install witokit
+```
+
+On python3.5 you may need to pass on the `--process-dependency-link` flag:
+```bash
+pip3 install witokit --process-dependency-link
 ```
 
 ## Use
