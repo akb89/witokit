@@ -1,10 +1,14 @@
 # WiToKit
-Welcome to `WiToKit`, a Python toolkit to generate a tokenized dump of Wikipedia.
+Welcome to `WiToKit`, a Python toolkit to download and generate
+preprocessed Wikipedia dumps for NLP in a single .txt file, one
+sentence per line.
+
+*Note: WiToKit currently only supports `xx-pages-articles.xml.xx.bz2` Wikipedia archives corresponding to articles, templates, media/file descriptions, and primary meta-pages.*
 
 ## Install
 
 ```
-pip install witokit
+pip3 install witokit
 ```
 
 ## Use
@@ -12,37 +16,41 @@ pip install witokit
 ### Download
 To download a .bz2-compressed Wikipedia XML dump, do:
 ```bash
-
+witokit download ⁠\
+  --lang lang_wp_code \
+  --date wiki_date \
+  --output /abs/path/to/output/dir/where/to/store/bz2/archives \
+  --num-threads num_cpu_threads
 ```
 
-if you want to have a full download progress bar you can always use the shell
-(on UNIX), with:
+For example, to download the latest English Wikipedia, do:
 ```bash
-wget -r -np -nH --cut-dirs=2 -R "index.html*" --accept-regex="https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles[0-9]+.xml.*bz2\$" https://dumps.wikimedia.org/enwiki/latest/
+witokit download ⁠--lang en --date latest --output /abs/path/to/output/dir --num-threads 2
 ```
 
+The `--lang` parameter expects the WP (language) code corresponding
+to the desired Wikipedia archive.
+Check out the full list of Wikipedias with their corresponding WP codes [here](https://en.wikipedia.org/wiki/List_of_Wikipedias).
+
+The `--date` parameter expects a string corresponding to one of the dates
+found under the Wikimedia dump site corresponding to a given Wikipedia dump
+(e.g. https://dumps.wikimedia.org/enwiki/ for the English Wikipedia).
 
 ### Extract
-To extract the content of the .bz2 archives, do:
+To extract the content of the downloaded .bz2 archives, do:
 
 ```bash
-
-```
-
-On UNIX, you can also use pbzip2 extract the content of an archive in parrallel:
-```bash
-find /abs/path/to/data/wikipedia/201XXXXX -type f -name "*.bz2" | xargs -n1 -I file pbzip2 -p55 -d file
+witokit extract \
+  --input /abs/path/to/downloaded/wikipedia/bz2/archives \
+  --num-threads num_cpu_threads
 ```
 
 ### Process
-To (pre-)process the content of the extracted archive (tokenize and lowercase)
-with spacy, do:
-
-### ___
-Extract the content of the downloaded XML files into a single .txt file,
-once sentence per line, tokenized with spacy.io, and lowercased.
-
-```
-witokit extract -i /abs/path/to/wikipedia/xml/dumps/ -o /abs/path/to/output/txt/file
--n number_of_threads_to_use
+To preprocess the content of the extracted XML archives and output a single .txt file, tokenize, one sentence per line:
+```bash
+witokit process \
+  --input /abs/path/to/wikipedia/extracted/xml/archives \
+  --output /abs/path/to/single/output/txt/file \
+  --lower \  # if set, will lowercase text
+  --num-threads num_threads
 ```

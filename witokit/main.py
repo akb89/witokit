@@ -15,12 +15,14 @@ import bz2
 import logging
 import logging.config
 
+import spacy
+import wikiextractor
+
 from bs4 import BeautifulSoup
 
 import witokit.utils.config as cutils
 import witokit.utils.files as futils
 import witokit.utils.urls as uutils
-import witokit.utils.wikipedia as wutils
 
 logging.config.dictConfig(
     cutils.load(
@@ -82,7 +84,7 @@ def _download(args):
     wiki_arxiv_hrefs = _collect_wiki_arxiv_hrefs(wiki_dump_url, args.lang,
                                                  args.date)
     _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, args.num_threads,
-                       args.output)
+                       args.output_dirpath)
 
 
 def _decompress_arxiv(arxiv):
@@ -90,9 +92,9 @@ def _decompress_arxiv(arxiv):
     logger.info('Extracting archive {}'.format(arxiv))
     output_arxiv_filepath = arxiv.rsplit('.bz2')[0]
     with open(arxiv, 'rb') as arxiv_byte_stream:
-        with open(output_arxiv_filepath, 'w', encoding='UTF-8') as out_stream:
+        with open(output_arxiv_filepath, 'wb') as out_stream:
             for data in iter(lambda: arxiv_byte_stream.read(100 * 1024), b''):
-                print(inc_decompressor.decompress(data), file=out_stream)
+                out_stream.write(inc_decompressor.decompress(data))
 
 
 def _extract(args):
@@ -107,15 +109,44 @@ def _extract(args):
                                                           total_arxivs))
 
 
+def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
+    """Extract content of wikipedia XML file.
+
+    Extract content of json.text as given by wikiextractor and tokenize
+    content with spacy. Output one-sentence-per-line, lowercase, tokenized
+    text.
+    """
+    logger.info('Extracting content of wikipedia file {}'
+                .format(input_xml_filepath))
+    output_filepath = futils.get_output_filepath(input_xml_filepath,
+                                                 output_txt_filepath)
+    spacy_nlp = spacy.load('en_core_web_sm')
+    spacy_nlp.max_length = 10000000  # avoid bug with very long input
+    with open(output_filepath, 'w', encoding='utf-8') as output_stream:
+        logger.info('Writing output to file {}'.format(output_filepath))
+        for json_object in wikiextractor.extract(input_xml_filepath):
+            doc = spacy_nlp(json_object['text'])
+            for sent in doc.sents:
+                if lowercase:
+                    tokens = [token.text.lower().strip() for token in sent]
+                else:
+                    tokens = [token.text.strip() for token in sent]
+                output_sent = ' '.join(tokens)
+                print(output_sent, file=output_stream)
+    return input_xml_filepath
+
+
 def _process(args):
-    logger.info('Extracting content of wikipedia archive under {}'
+    logger.info('Processing content of wikipedia archives under {}'
                 .format(args.wiki_input_dirpath))
+    if args.lower:
+        logger.info('Lowercasing archives')
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
     with multiprocessing.Pool(args.num_threads) as pool:
-        extract = functools.partial(wutils.extract,
-                                    args.wiki_output_filepath)
+        extract = functools.partial(_preprocess,
+                                    args.wiki_output_filepath, args.lower)
         for process in pool.imap_unordered(extract, input_filepaths):
             arxiv_num += 1
             logger.info('Done extracting content of {}'.format(process))
@@ -149,6 +180,7 @@ def main():
                                  help='the date of the Wikipedia dump to '
                                       'download')
     parser_download.add_argument('-o', '--output', required=True,
+                                 dest='output_dirpath',
                                  help='absolute path to output directory '
                                       'where to save downloaded files')
     parser_download.add_argument('-n', '--num-threads', type=int, default=1,
@@ -166,7 +198,7 @@ def main():
     parser_process = subparsers.add_parser(
         'process', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help='(pre-)process content of a Wikipedia XML dump')
-    parser_process.set_defaults(func=_extract)
+    parser_process.set_defaults(func=_process)
     parser_process.add_argument('-i', '--input', required=True,
                                 dest='wiki_input_dirpath',
                                 help='absolute path to directory containing '
@@ -174,6 +206,8 @@ def main():
     parser_process.add_argument('-o', '--output', required=True,
                                 dest='wiki_output_filepath',
                                 help='absolute path to output .txt file')
+    parser_process.add_argument('-lc', '--lower', action='store_true',
+                                help='whether or not to lowercase splits')
     parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
     args = parser.parse_args()

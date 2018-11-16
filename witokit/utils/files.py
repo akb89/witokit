@@ -49,7 +49,8 @@ def get_output_filepath(input_xml_filepath, output_txt_filepath):
 def get_input_filepaths(dirpath):
     """Return a list of absolute XML filepaths from a given dirpath.
 
-    List all the files under a specific directory.
+    List all the files under a specific directory, all .xml and no .bz2.
     """
     return [os.path.join(dirpath, filename) for filename in
-            os.listdir(dirpath) if '.xml' in filename]
+            os.listdir(dirpath) if '.xml' in filename
+            and '.bz2' not in filename]
