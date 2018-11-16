@@ -15,10 +15,10 @@ import bz2
 import logging
 import logging.config
 
+from bs4 import BeautifulSoup
+
 import spacy
 import wikiextractor
-
-from bs4 import BeautifulSoup
 
 import witokit.utils.config as cutils
 import witokit.utils.files as futils
