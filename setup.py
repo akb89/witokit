@@ -16,7 +16,7 @@ setup(
     author_email='akb@3azouz.net',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='0.1.1',
+    version='0.1.2',
     url='https://github.com/akb89/witokit',
     download_url='https://pypi.org/project/witokit/#files',
     license='MIT',
@@ -31,7 +31,7 @@ setup(
             'witokit = witokit.main:main'
         ],
     },
-    install_requires=['PyYAML==3.13', 'wikiextractor==3.0.3', 'spacy==2.0.12',
+    install_requires=['PyYAML==3.13', 'wikiextractor==3.0.3', 'spacy==2.0.16',
                       'en_core_web_sm==2.0.0', 'natsort==5.4.1',
                       'beautifulsoup4==4.6.3'],
     dependency_links=[
