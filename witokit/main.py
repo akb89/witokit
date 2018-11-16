@@ -4,7 +4,6 @@ This is the entry point of the application.
 """
 
 import os
-import sys
 import argparse
 import multiprocessing
 import urllib
@@ -38,9 +37,9 @@ def _download_href(output_dirpath, wiki_dump_url, href):
                                                           href)
     try:
         urllib.request.urlretrieve(url, output_filepath)
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as error:
         logger.error('Could not download archive from {}'.format(url))
-        sys.exit(1)
+        raise error
 
 
 def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
@@ -69,11 +68,11 @@ def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
             href = link.get('href')
             if re.match(pattern, href):
                 wiki_arxiv_hrefs.append(href)
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as error:
         logger.error('HTTPError using lang = \'{}\' and date = \'{}\'. '
                      'Could not retrieve any Wikipedia data at URL = {}'
                      .format(lang, date, wiki_dump_url))
-        sys.exit(1)
+        raise error
     return wiki_arxiv_hrefs
 
 
