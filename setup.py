@@ -32,7 +32,7 @@ setup(
         ],
     },
     install_requires=['PyYAML==3.13', 'wikiextractor==3.0.3', 'spacy-nightly==2.1.0a1',
-                      'en_core_web_sm-2.1.0a0', 'natsort==5.4.1',
+                      'en_core_web_sm==2.1.0a0', 'natsort==5.4.1',
                       'beautifulsoup4==4.6.3'],
     dependency_links=[
         'https://github.com/akb89/wikiextractor/tarball/master#egg=wikiextractor-3.0.3',
