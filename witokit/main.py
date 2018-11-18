@@ -124,14 +124,19 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
-            doc = spacy_nlp(json_object['text'])
-            for sent in doc.sents:
-                if lowercase:
-                    tokens = [token.text.lower().strip() for token in sent]
-                else:
-                    tokens = [token.text.strip() for token in sent]
-                output_sent = ' '.join(tokens)
-                print(output_sent, file=output_stream)
+            try:
+                doc = spacy_nlp(json_object['text'])
+                for sent in doc.sents:
+                    if lowercase:
+                        tokens = [token.text.lower().strip() for token in sent]
+                    else:
+                        tokens = [token.text.strip() for token in sent]
+                    output_sent = ' '.join(tokens)
+                    print(output_sent, file=output_stream)
+            except UnicodeEncodeError as err:
+                logger.error('UnicodeEncodeError processing '
+                             'json_object[\'text\'] with spacy: {}'
+                             .format(str(err)))
     return input_xml_filepath
 
 
