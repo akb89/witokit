@@ -115,7 +115,7 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     content with spacy. Output one-sentence-per-line, lowercase, tokenized
     text.
     """
-    logger.info('Extracting content of wikipedia file {}'
+    logger.info('Processing content of wikipedia file {}'
                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
@@ -210,7 +210,7 @@ def main():
     parser_process.add_argument('-o', '--output', required=True,
                                 dest='wiki_output_filepath',
                                 help='absolute path to output .txt file')
-    parser_process.add_argument('-lc', '--lower', action='store_true',
+    parser_process.add_argument('-l', '--lower', action='store_true',
                                 help='whether or not to lowercase splits')
     parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
