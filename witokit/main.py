@@ -149,7 +149,8 @@ def _process(args):
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
-    with multiprocessing.Pool(args.num_threads) as pool:
+    with multiprocessing.Pool(processes=args.num_threads,
+                              maxtasksperchild=args.max_tasks) as pool:
         preprocess = functools.partial(_preprocess, args.wiki_output_filepath,
                                        args.lower, args.max_length)
         for process in pool.imap_unordered(preprocess, input_filepaths):
@@ -217,6 +218,10 @@ def main():
                                 dest='max_length',
                                 help='spacy .max_length option for string '
                                      'processing')
+    parser_process.add_argument('-t', '--max-tasks', type=int, default=10,
+                                help='max task per child for fine-grained '
+                                     'control over python multiprocessing '
+                                     'pool memory management')
     parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
     args = parser.parse_args()
