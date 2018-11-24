@@ -16,8 +16,6 @@ import logging.config
 
 from bs4 import BeautifulSoup
 
-import pathos.multiprocessing as pm
-
 import spacy
 import wikiextractor
 
@@ -110,7 +108,7 @@ def _extract(args):
                                                           total_arxivs))
 
 
-def _preprocess(spacy_nlp, output_txt_filepath, lowercase, input_xml_filepath):
+def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     """Extract content of wikipedia XML file.
 
     Extract content of json.text as given by wikiextractor and tokenize
@@ -121,6 +119,8 @@ def _preprocess(spacy_nlp, output_txt_filepath, lowercase, input_xml_filepath):
                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
+    spacy_nlp = spacy.load('en_core_web_sm')
+    spacy_nlp.max_length = 10000000  # avoid bug with very long input
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
@@ -148,16 +148,15 @@ def _process(args):
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
-    pool = pm.ProcessingPool(args.num_threads)
-    spacy_nlp = spacy.load('en_core_web_sm')
-    spacy_nlp.max_length = 10000000  # avoid bug with very long input
-    preprocess = functools.partial(_preprocess, spacy_nlp,
-                                   args.wiki_output_filepath, args.lower)
-    for process in pool.uimap(preprocess, input_filepaths):
-        arxiv_num += 1
-        logger.info('Done processing content of {}'.format(process))
-        logger.info('Completed processing of {}/{} archives'
-                    .format(arxiv_num, total_arxivs))
+    with multiprocessing.Pool(args.num_threads) as pool:
+        extract = functools.partial(_preprocess,
+                                    args.wiki_output_filepath, args.lower)
+        for process in pool.imap_unordered(extract, input_filepaths):
+            arxiv_num += 1
+            logger.info('Done processing content of {}'.format(process))
+            logger.info('Completed processing of {}/{} archives'
+                        .format(arxiv_num, total_arxivs))
+    # concatenate all .txt files into single output .txt file
     logger.info('Concatenating tmp files...')
     tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
     with open(args.wiki_output_filepath, 'w', encoding='utf-8') as output_strm:

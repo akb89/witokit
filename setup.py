@@ -16,7 +16,7 @@ setup(
     author_email='akb@3azouz.net',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='0.1.11',
+    version='0.1.10',
     url='https://github.com/akb89/witokit',
     download_url='https://pypi.org/project/witokit/#files',
     license='MIT',
@@ -31,10 +31,9 @@ setup(
             'witokit = witokit.main:main'
         ],
     },
-    install_requires=['PyYAML==3.13', 'wikiextractor==3.0.3',
-                      'spacy-nightly==2.1.0a1', 'en_core_web_sm==2.1.0a0',
-                      'natsort==5.4.1', 'beautifulsoup4==4.6.3',
-                      'pathos==0.2.2.1'],
+    install_requires=['PyYAML==3.13', 'wikiextractor==3.0.3', 'spacy-nightly==2.1.0a1',
+                      'en_core_web_sm==2.1.0a0', 'natsort==5.4.1',
+                      'beautifulsoup4==4.6.3'],
     dependency_links=[
         'https://github.com/akb89/wikiextractor/tarball/master#egg=wikiextractor-3.0.3',
         'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.1.0a0/en_core_web_sm-2.1.0a0.tar.gz'],
