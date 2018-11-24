@@ -8,7 +8,7 @@ Welcome to `WiToKit`, a Python toolkit to download and generate
 preprocessed Wikipedia dumps for NLP in a single .txt file, one
 sentence per line.
 
-*Note: WiToKit currently only supports `xx-pages-articles.xml.xx.bz2` Wikipedia archives corresponding to articles, templates, media/file descriptions, and primary meta-pages.*
+*Note: WiToKit currently only supports `xx-pages-articles.xml.xx.bz2` Wikipedia archives corresponding to articles, templates, media/file descriptions, and primary meta-pages. Also, the preprocessing is currently only supported for English. If you'd like support in other languages, please create an issue on Github.*
 
 ## Install
 

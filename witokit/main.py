@@ -108,19 +108,20 @@ def _extract(args):
                                                           total_arxivs))
 
 
-def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
+def _preprocess(output_txt_filepath, lowercase, max_length,
+                input_xml_filepath):
     """Extract content of wikipedia XML file.
 
     Extract content of json.text as given by wikiextractor and tokenize
     content with spacy. Output one-sentence-per-line, lowercase, tokenized
     text.
     """
-    logger.info('Extracting content of wikipedia file {}'
+    logger.info('Processing content of wikipedia file {}'
                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
     spacy_nlp = spacy.load('en_core_web_sm')
-    spacy_nlp.max_length = 10000000  # avoid bug with very long input
+    spacy_nlp.max_length = max_length  # avoid bug with very long input
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
@@ -148,10 +149,11 @@ def _process(args):
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
-    with multiprocessing.Pool(args.num_threads) as pool:
-        extract = functools.partial(_preprocess,
-                                    args.wiki_output_filepath, args.lower)
-        for process in pool.imap_unordered(extract, input_filepaths):
+    with multiprocessing.Pool(processes=args.num_threads,
+                              maxtasksperchild=args.max_tasks) as pool:
+        preprocess = functools.partial(_preprocess, args.wiki_output_filepath,
+                                       args.lower, args.max_length)
+        for process in pool.imap_unordered(preprocess, input_filepaths):
             arxiv_num += 1
             logger.info('Done processing content of {}'.format(process))
             logger.info('Completed processing of {}/{} archives'
@@ -210,8 +212,16 @@ def main():
     parser_process.add_argument('-o', '--output', required=True,
                                 dest='wiki_output_filepath',
                                 help='absolute path to output .txt file')
-    parser_process.add_argument('-lc', '--lower', action='store_true',
+    parser_process.add_argument('-l', '--lower', action='store_true',
                                 help='whether or not to lowercase splits')
+    parser_process.add_argument('-m', '--max-len', type=int, default=10000000,
+                                dest='max_length',
+                                help='spacy .max_length option for string '
+                                     'processing')
+    parser_process.add_argument('-t', '--max-tasks', type=int, default=10,
+                                help='max task per child for fine-grained '
+                                     'control over python multiprocessing '
+                                     'pool memory management')
     parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
     args = parser.parse_args()
