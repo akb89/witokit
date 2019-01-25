@@ -149,6 +149,7 @@ def _process(args):
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
+    left = input_filepaths
     with multiprocessing.Pool(processes=args.num_threads,
                               maxtasksperchild=args.max_tasks) as pool:
         preprocess = functools.partial(_preprocess, args.wiki_output_filepath,
@@ -158,6 +159,8 @@ def _process(args):
             logger.info('Done processing content of {}'.format(process))
             logger.info('Completed processing of {}/{} archives'
                         .format(arxiv_num, total_arxivs))
+            left = [item for item in left if item != process]
+            logger.info('Left to process: {}'.format(left))
     # concatenate all .txt files into single output .txt file
     logger.info('Concatenating tmp files...')
     tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
@@ -218,7 +221,7 @@ def main():
                                 dest='max_length',
                                 help='spacy .max_length option for string '
                                      'processing')
-    parser_process.add_argument('-t', '--max-tasks', type=int, default=10,
+    parser_process.add_argument('-t', '--max-tasks', type=int, default=0,
                                 help='max task per child for fine-grained '
                                      'control over python multiprocessing '
                                      'pool memory management')
