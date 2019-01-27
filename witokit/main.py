@@ -6,11 +6,12 @@ This is the entry point of the application.
 import os
 import argparse
 import multiprocessing
-import urllib
+import urllib.request
 import functools
 import shutil
 import re
 import bz2
+import pycld2
 import logging
 import logging.config
 
@@ -60,6 +61,7 @@ def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
 def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
     wiki_arxiv_hrefs = []
     try:
+        logger.info('Collecting arxiv from {}'.format(wiki_dump_url))
         response = urllib.request.urlopen(wiki_dump_url)
         html_doc = response.read()
         soup = BeautifulSoup(html_doc, 'html.parser')
@@ -136,6 +138,10 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
                 logger.error('UnicodeEncodeError processing '
                              'json_object[\'text\'] with spacy: {}'
                              .format(str(err)))
+            except ValueError as err:
+                logger.warning('Skipping empty text sequence')
+            except pycld2.error as err:
+                logger.warning('{}. Skipping sequence'.format(str(err)))
     return input_xml_filepath
 
 
@@ -148,28 +154,31 @@ def _process(args):
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
     left = input_filepaths
-    with multiprocessing.Pool(processes=args.num_threads,
-                              maxtasksperchild=args.max_tasks) as pool:
-        preprocess = functools.partial(_preprocess, args.wiki_output_filepath,
-                                       args.lower, args.max_length)
-        for process in pool.imap_unordered(preprocess, input_filepaths):
-            arxiv_num += 1
-            logger.info('Done processing content of {}'.format(process))
-            logger.info('Completed processing of {}/{} archives'
-                        .format(arxiv_num, total_arxivs))
-            left = [item for item in left if item != process]
-            logger.info('Left to process: {}'.format(left))
-    # concatenate all .txt files into single output .txt file
-    logger.info('Concatenating tmp files...')
-    tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
     with open(args.wiki_output_filepath, 'w', encoding='utf-8') as output_strm:
+        # with multiprocessing.Pool(processes=args.num_threads,
+        #                           maxtasksperchild=args.max_tasks) as pool:
+        # for wiki_input_filepath in input_filepaths:
+        #     _preprocess(args.wiki_output_filepath, args.lower, wiki_input_filepath)
+        with multiprocessing.Pool(processes=args.num_threads) as pool:
+            preprocess = functools.partial(
+                _preprocess, args.wiki_output_filepath, args.lower)
+            for process in pool.imap_unordered(preprocess, input_filepaths):
+                arxiv_num += 1
+                logger.info('Done processing content of {}'.format(process))
+                logger.info('Completed processing of {}/{} archives'
+                            .format(arxiv_num, total_arxivs))
+                left = [item for item in left if item != process]
+                logger.info('Left to process: {}'.format(left))
+        # concatenate all .txt files into single output .txt file
+        logger.info('Concatenating tmp files...')
+        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
         for tmp_filepath in tmp_filepaths:
             with open(tmp_filepath, 'r') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
                     print(line, file=output_strm)
-    logger.info('Done processing content of Wikipedia archives')
-    shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
+        logger.info('Done processing content of Wikipedia archives')
+        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
 
 
 def main():

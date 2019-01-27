@@ -33,7 +33,8 @@ setup(
     },
     install_requires=['pyyaml>=4.2b1', 'wikiextractor==3.0.3', 'natsort==5.4.1',
                       'beautifulsoup4==4.6.3', 'polyglot==16.7.4',
-                      'numpy==1.16.0', 'pyicu==2.2'],
+                      'numpy==1.16.0', 'pyicu==2.2', 'pycld2==0.31',
+                      'morfessor==2.0.4'],
     dependency_links=[
         'https://github.com/akb89/wikiextractor/tarball/master#egg=wikiextractor-3.0.3'],
     classifiers=['Development Status :: 4 - Beta',
