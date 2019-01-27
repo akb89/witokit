@@ -14,9 +14,9 @@ import bz2
 import logging
 import logging.config
 
+from polyglot.text import Text
 from bs4 import BeautifulSoup
 
-import spacy
 import wikiextractor
 
 import witokit.utils.config as cutils
@@ -108,30 +108,28 @@ def _extract(args):
                                                           total_arxivs))
 
 
-def _preprocess(output_txt_filepath, lowercase, max_length,
-                input_xml_filepath):
+def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     """Extract content of wikipedia XML file.
 
     Extract content of json.text as given by wikiextractor and tokenize
-    content with spacy. Output one-sentence-per-line, lowercase, tokenized
+    content with polyglot. Output one-sentence-per-line, lowercase, tokenized
     text.
     """
     logger.info('Processing content of wikipedia file {}'
                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
-    spacy_nlp = spacy.load('en_core_web_sm')
-    spacy_nlp.max_length = max_length  # avoid bug with very long input
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
             try:
-                doc = spacy_nlp(json_object['text'])
-                for sent in doc.sents:
+                text = Text(json_object['text'])  # lang will be guessed
+                #text.language = ...
+                for sent in text.sentences:
                     if lowercase:
-                        tokens = [token.text.lower().strip() for token in sent]
+                        tokens = [token.lower().strip() for token in sent.words]
                     else:
-                        tokens = [token.text.strip() for token in sent]
+                        tokens = [token.strip() for token in sent.words]
                     output_sent = ' '.join(tokens)
                     print(output_sent, file=output_stream)
             except UnicodeEncodeError as err:
