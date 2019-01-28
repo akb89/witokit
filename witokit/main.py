@@ -11,9 +11,9 @@ import functools
 import shutil
 import re
 import bz2
-import pycld2
 import logging
 import logging.config
+import pycld2
 
 from polyglot.text import Text
 from bs4 import BeautifulSoup
@@ -126,7 +126,6 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
         for json_object in wikiextractor.extract(input_xml_filepath):
             try:
                 text = Text(json_object['text'])  # lang will be guessed
-                #text.language = ...
                 for sent in text.sentences:
                     if lowercase:
                         tokens = [token.lower().strip() for token in sent.words]
