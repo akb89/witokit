@@ -16,7 +16,7 @@ setup(
     author_email='akb@3azouz.net',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='0.3.4',
+    version='0.4.0',
     url='https://github.com/akb89/witokit',
     download_url='https://pypi.org/project/witokit/#files',
     license='MIT',

@@ -66,10 +66,20 @@ def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
         html_doc = response.read()
         soup = BeautifulSoup(html_doc, 'html.parser')
         for link in soup.find_all('a'):
-            pattern = uutils.get_wikipedia_pattern(lang, date)
+            pattern = uutils.get_wikipedia_multi_pattern(lang, date)
             href = link.get('href')
             if re.match(pattern, href):
                 wiki_arxiv_hrefs.append(href)
+        if not wiki_arxiv_hrefs:
+            logger.info('No multi arxivs found. Trying for single arxiv')
+            # If wikipedia arxiv is too small, check for single arxiv
+            for link in soup.find_all('a'):
+                pattern = uutils.get_wikipedia_single_pattern(lang, date)
+                href = link.get('href')
+                if re.match(pattern, href):
+                    wiki_arxiv_hrefs.append(href)
+        if not wiki_arxiv_hrefs:
+            logger.warning('No wikipedia arxiv found')
     except urllib.error.HTTPError as error:
         logger.error('HTTPError using lang = \'{}\' and date = \'{}\'. '
                      'Could not retrieve any Wikipedia data at URL = {}'
