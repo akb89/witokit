@@ -173,7 +173,7 @@ def _process(args):
                     line = line.strip()
                     print(line, file=output_strm)
         logger.info('Done processing content of Wikipedia archives')
-        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
+        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_input_dirpath))
 
 
 def _sample(args):

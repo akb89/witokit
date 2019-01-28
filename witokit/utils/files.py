@@ -27,7 +27,7 @@ def get_tmp_dirpath(input_xml_filepath):
 
 def get_tmp_filepaths(xml_input_dirpath):
     """Return all .txt files under the output_txt_dirpath/tmp/ dir."""
-    tmp_dirpath = os.path.join(xml_input_dirpath, 'tmp')
+    tmp_dirpath = get_tmp_dirpath(xml_input_dirpath)
     return natsort.natsorted([os.path.join(tmp_dirpath, filename) for filename
                               in os.listdir(tmp_dirpath)],
                              alg=natsort.ns.IGNORECASE)
