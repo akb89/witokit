@@ -20,14 +20,14 @@ def get_download_output_filepath(output_dirpath, href):
     return os.path.join(output_dirpath, href)
 
 
-def get_tmp_dirpath(output_txt_filepath):
+def get_tmp_dirpath(input_xml_filepath):
     """Return absolute path to output_txt_dirpath/tmp/."""
-    return os.path.join(os.path.dirname(output_txt_filepath), 'tmp')
+    return os.path.join(os.path.dirname(input_xml_filepath), 'tmp')
 
 
-def get_tmp_filepaths(output_txt_filepath):
+def get_tmp_filepaths(xml_input_dirpath):
     """Return all .txt files under the output_txt_dirpath/tmp/ dir."""
-    tmp_dirpath = get_tmp_dirpath(output_txt_filepath)
+    tmp_dirpath = os.path.join(xml_input_dirpath, 'tmp')
     return natsort.natsorted([os.path.join(tmp_dirpath, filename) for filename
                               in os.listdir(tmp_dirpath)],
                              alg=natsort.ns.IGNORECASE)
@@ -38,7 +38,7 @@ def get_output_filepath(input_xml_filepath, output_txt_filepath):
 
     Create tmp dir if not exists.
     """
-    tmp_dirpath = get_tmp_dirpath(output_txt_filepath)
+    tmp_dirpath = get_tmp_dirpath(input_xml_filepath)
     os.makedirs(tmp_dirpath, exist_ok=True)
     output_filename = os.path.basename(input_xml_filepath)
     output_txt_filepath = os.path.join(

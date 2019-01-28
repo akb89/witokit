@@ -166,7 +166,7 @@ def _process(args):
                 logger.info('Left to process: {}'.format(left))
         # concatenate all .txt files into single output .txt file
         logger.info('Concatenating tmp files...')
-        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
+        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_input_dirpath)
         for tmp_filepath in tmp_filepaths:
             with open(tmp_filepath, 'r', encoding='utf-8') as tmp_stream:
                 for line in tmp_stream:
