@@ -168,7 +168,7 @@ def _process(args):
         logger.info('Concatenating tmp files...')
         tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
         for tmp_filepath in tmp_filepaths:
-            with open(tmp_filepath, 'r') as tmp_stream:
+            with open(tmp_filepath, 'r', encoding='utf-8') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
                     print(line, file=output_strm)
@@ -183,7 +183,7 @@ def _sample(args):
     output_filepath = '{}.sample{}'.format(args.input_filepath, args.percent)
     logger.info('Counting number of lines in file...')
     count = 0
-    with open(args.input_filepath, 'r') as input_stream:
+    with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
         for line in input_stream:
             count += 1
     logger.info('Total lines = {}'.format(count))
@@ -191,7 +191,7 @@ def _sample(args):
     sampling = count / final_count
     logger.info('Sampling file to {} lines with sampling rate = {}'
                 .format(final_count, sampling))
-    with open(args.input_filepath, 'r') as input_stream:
+    with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
         with open(output_filepath, 'w', encoding='utf-8') as output_stream:
             for idx, line in enumerate(input_stream):
                 if idx % sampling == 0:

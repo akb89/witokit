@@ -16,7 +16,7 @@ setup(
     author_email='akb@3azouz.net',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='0.3.0',
+    version='0.3.1',
     url='https://github.com/akb89/witokit',
     download_url='https://pypi.org/project/witokit/#files',
     license='MIT',
@@ -31,12 +31,12 @@ setup(
             'witokit = witokit.main:main'
         ],
     },
-    install_requires=['pyyaml>=4.2b1', 'wikiextractor==3.0.3',
+    install_requires=['pyyaml>=4.2b1', 'wikiextractor==3.0.4',
                       'natsort==5.4.1', 'beautifulsoup4==4.6.3',
                       'polyglot==16.7.4', 'numpy==1.16.0', 'pyicu==2.2',
                       'pycld2==0.31', 'morfessor==2.0.4'],
     dependency_links=[
-        'https://github.com/akb89/wikiextractor/tarball/master#egg=wikiextractor-3.0.3'],
+        'https://github.com/akb89/wikiextractor/tarball/master#egg=wikiextractor-3.0.4'],
     classifiers=['Development Status :: 4 - Beta',
                  'Environment :: Console',
                  'Intended Audience :: Developers',
