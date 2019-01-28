@@ -6,17 +6,18 @@ This is the entry point of the application.
 import os
 import argparse
 import multiprocessing
-import urllib
+import urllib.request
 import functools
 import shutil
 import re
 import bz2
 import logging
 import logging.config
+import pycld2
 
+from polyglot.text import Text
 from bs4 import BeautifulSoup
 
-import spacy
 import wikiextractor
 
 import witokit.utils.config as cutils
@@ -60,6 +61,7 @@ def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
 def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
     wiki_arxiv_hrefs = []
     try:
+        logger.info('Collecting arxiv from {}'.format(wiki_dump_url))
         response = urllib.request.urlopen(wiki_dump_url)
         html_doc = response.read()
         soup = BeautifulSoup(html_doc, 'html.parser')
@@ -108,36 +110,37 @@ def _extract(args):
                                                           total_arxivs))
 
 
-def _preprocess(output_txt_filepath, lowercase, max_length,
-                input_xml_filepath):
+def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     """Extract content of wikipedia XML file.
 
     Extract content of json.text as given by wikiextractor and tokenize
-    content with spacy. Output one-sentence-per-line, lowercase, tokenized
+    content with polyglot. Output one-sentence-per-line, lowercase, tokenized
     text.
     """
     logger.info('Processing content of wikipedia file {}'
                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
-    spacy_nlp = spacy.load('en_core_web_sm')
-    spacy_nlp.max_length = max_length  # avoid bug with very long input
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
             try:
-                doc = spacy_nlp(json_object['text'])
-                for sent in doc.sents:
+                text = Text(json_object['text'])  # lang will be guessed
+                for sent in text.sentences:
                     if lowercase:
-                        tokens = [token.text.lower().strip() for token in sent]
+                        tokens = [token.lower().strip() for token in sent.words]
                     else:
-                        tokens = [token.text.strip() for token in sent]
+                        tokens = [token.strip() for token in sent.words]
                     output_sent = ' '.join(tokens)
                     print(output_sent, file=output_stream)
             except UnicodeEncodeError as err:
                 logger.error('UnicodeEncodeError processing '
                              'json_object[\'text\'] with spacy: {}'
                              .format(str(err)))
+            except ValueError as err:
+                logger.warning('Skipping empty text sequence')
+            except pycld2.error as err:
+                logger.warning('{}. Skipping sequence'.format(str(err)))
     return input_xml_filepath
 
 
@@ -149,26 +152,32 @@ def _process(args):
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
     arxiv_num = 0
-    with multiprocessing.Pool(processes=args.num_threads,
-                              maxtasksperchild=args.max_tasks) as pool:
-        preprocess = functools.partial(_preprocess, args.wiki_output_filepath,
-                                       args.lower, args.max_length)
-        for process in pool.imap_unordered(preprocess, input_filepaths):
-            arxiv_num += 1
-            logger.info('Done processing content of {}'.format(process))
-            logger.info('Completed processing of {}/{} archives'
-                        .format(arxiv_num, total_arxivs))
-    # concatenate all .txt files into single output .txt file
-    logger.info('Concatenating tmp files...')
-    tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
+    left = input_filepaths
     with open(args.wiki_output_filepath, 'w', encoding='utf-8') as output_strm:
+        # with multiprocessing.Pool(processes=args.num_threads,
+        #                           maxtasksperchild=args.max_tasks) as pool:
+        # for wiki_input_filepath in input_filepaths:
+        #     _preprocess(args.wiki_output_filepath, args.lower, wiki_input_filepath)
+        with multiprocessing.Pool(processes=args.num_threads) as pool:
+            preprocess = functools.partial(
+                _preprocess, args.wiki_output_filepath, args.lower)
+            for process in pool.imap_unordered(preprocess, input_filepaths):
+                arxiv_num += 1
+                logger.info('Done processing content of {}'.format(process))
+                logger.info('Completed processing of {}/{} archives'
+                            .format(arxiv_num, total_arxivs))
+                left = [item for item in left if item != process]
+                logger.info('Left to process: {}'.format(left))
+        # concatenate all .txt files into single output .txt file
+        logger.info('Concatenating tmp files...')
+        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
         for tmp_filepath in tmp_filepaths:
             with open(tmp_filepath, 'r') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
                     print(line, file=output_strm)
-    logger.info('Done processing content of Wikipedia archives')
-    shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
+        logger.info('Done processing content of Wikipedia archives')
+        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
 
 
 def main():
@@ -218,7 +227,7 @@ def main():
                                 dest='max_length',
                                 help='spacy .max_length option for string '
                                      'processing')
-    parser_process.add_argument('-t', '--max-tasks', type=int, default=10,
+    parser_process.add_argument('-t', '--max-tasks', type=int, default=0,
                                 help='max task per child for fine-grained '
                                      'control over python multiprocessing '
                                      'pool memory management')
