@@ -138,9 +138,9 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
                              'json_object[\'text\'] with spacy: {}'
                              .format(str(err)))
             except ValueError as err:
-                logger.warning('Skipping empty text sequence')
+                logger.debug('Skipping empty text sequence')
             except pycld2.error as err:
-                logger.warning('{}. Skipping sequence'.format(str(err)))
+                logger.debug('{}. Skipping sequence'.format(str(err)))
     return input_xml_filepath
 
 
