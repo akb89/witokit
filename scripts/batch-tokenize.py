@@ -23,10 +23,10 @@ def _process(lowercase, output_dirpath, input_filepath):
 
 
 if __name__ == '__main__':
-    BATCH_DIRPATH = '/Users/akb/Github/witokit/data/'
-    OUTPUT_DIRPATH = '/Users/akb/Github/witokit/data/'
+    BATCH_DIRPATH = '/home/kabbach/witokit/data/ud23/raw/'
+    OUTPUT_DIRPATH = '/home/kabbach/witokit/data/ud23/tokenized/'
     LOWERCASE = True
-    NUM_THREADS = 1
+    NUM_THREADS = 38
 
     assert os.path.exists(BATCH_DIRPATH)
     assert os.path.exists(OUTPUT_DIRPATH)
