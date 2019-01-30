@@ -36,9 +36,9 @@ if __name__ == '__main__':
 
     file_num = 0
     with multiprocessing.Pool(NUM_THREADS) as pool:
-        file_num += 1
         process = functools.partial(_process, LOWERCASE, OUTPUT_DIRPATH)
         for filepath in pool.imap_unordered(process, txt_filepaths):
+            file_num += 1
             print('Done processing file {}'.format(filepath))
             print('Completed processing of {}/{} files'
                   .format(file_num, len(txt_filepaths)))
