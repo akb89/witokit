@@ -30,6 +30,8 @@ logging.config.dictConfig(
 
 logger = logging.getLogger(__name__)
 
+__all__ = ('tokenize')
+
 
 def _download_href(output_dirpath, wiki_dump_url, href):
     url = uutils.get_wiki_arxiv_url(wiki_dump_url, href)
@@ -135,23 +137,31 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
         logger.info('Writing output to file {}'.format(output_filepath))
         for json_object in wikiextractor.extract(input_xml_filepath):
             try:
-                text = Text(json_object['text'])  # lang will be guessed
-                for sent in text.sentences:
-                    if lowercase:
-                        tokens = [token.lower().strip() for token in sent.words]
-                    else:
-                        tokens = [token.strip() for token in sent.words]
-                    output_sent = ' '.join(tokens)
-                    print(output_sent, file=output_stream)
+                print(tokenize(json_object['text'], lowercase),
+                      file=output_stream)
             except UnicodeEncodeError as err:
                 logger.error('UnicodeEncodeError processing '
                              'json_object[\'text\'] with spacy: {}'
                              .format(str(err)))
-            except ValueError as err:
-                logger.debug('Skipping empty text sequence')
-            except pycld2.error as err:
-                logger.debug('{}. Skipping sequence'.format(str(err)))
     return input_xml_filepath
+
+
+def tokenize(raw_text, lowercase):
+    """Tokenize raw_text with polyglot."""
+    output = []
+    try:
+        text = Text(raw_text)
+        for sent in text.sentences:
+            if lowercase:
+                tokens = [token.lower().strip() for token in sent.words]
+            else:
+                tokens = [token.strip() for token in sent.words]
+            output.append(' '.join(tokens))
+    except ValueError as err:
+        logger.debug('Skipping empty text sequence')
+    except pycld2.error as err:
+        logger.debug('{}. Skipping sequence'.format(str(err)))
+    return '\n'.join(output)
 
 
 def _process(args):
