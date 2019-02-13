@@ -197,24 +197,40 @@ def _process(args):
 
 
 def _sample(args):
-    if args.percent > 100:
-        raise Exception('Specified percent arg should be a percentage < 100')
+    if not (0 < args.percent < 100):
+        raise Exception('Specified percent param should be in ]0, 100[')
     logger.info('Sampling input file {}'.format(args.input_filepath))
-    output_filepath = '{}.sample{}'.format(args.input_filepath, args.percent)
+
     logger.info('Counting number of lines in file...')
     count = 0
+    if args.input_filepath.endswith('.txt'):
+        input_basename = args.input_filepath.split('.txt')[0]
+    else:
+        input_basename = args.input_filepath
     with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
         for line in input_stream:
             count += 1
     logger.info('Total lines = {}'.format(count))
     final_count = count * args.percent / 100
     sampling = count / final_count
-    logger.info('Sampling file to {} lines with sampling rate = {}'
-                .format(final_count, sampling))
-    with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
-        with open(output_filepath, 'w', encoding='utf-8') as output_stream:
-            for idx, line in enumerate(input_stream):
-                if idx % sampling == 0:
+    logger.info('Sampling file to {} lines'.format(final_count))
+    print(round(sampling))
+    if args.balance:
+        output_filepath = '{}.sample{}.balanced.txt'.format(input_basename,
+                                                            args.percent)
+        with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
+            with open(output_filepath, 'w', encoding='utf-8') as output_stream:
+                for idx, line in enumerate(input_stream):
+                    if idx % round(sampling) == 0:
+                        print(line.strip(), file=output_stream)
+    else:
+        output_filepath = '{}.sample{}.txt'.format(input_basename,
+                                                   args.percent)
+        with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
+            with open(output_filepath, 'w', encoding='utf-8') as output_stream:
+                for idx, line in enumerate(input_stream):
+                    if idx >= final_count:
+                        break
                     print(line.strip(), file=output_stream)
     logger.info('Done sampling file')
 
@@ -281,5 +297,9 @@ def main():
                                help='absolute path to .txt file to sample')
     parser_sample.add_argument('-p', '--percent', required=True, type=float,
                                help='percentage of input file to keep')
+    parser_sample.add_argument('-b', '--balance', action='store_true',
+                               help='whether or not to balance the sampling'
+                                    'within the corpus or to take the top'
+                                    'p% sentences')
     args = parser.parse_args()
     args.func(args)
