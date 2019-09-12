@@ -67,7 +67,7 @@ witokit process \
   --num-threads num_cpu_threads
 ```
 
-Preprocessing for all languages is performed with [Polyglot](https://github.com/aboSamoor/polyglot)
+Preprocessing for all languages is performed with [Polyglot](https://github.com/aboSamoor/polyglot).
 
 ### Sample
 You can also use WiToKit to sample the content of a preprocess .txt file, using:
