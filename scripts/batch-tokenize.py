@@ -11,22 +11,21 @@ def _process(lowercase, output_dirpath, input_filepath):
     output_filepath = os.path.join(
         output_dirpath,
         '{}.tkz.txt'.format(os.path.basename(input_filepath).split('.txt')[0]))
-    input = []
+    processing_input = []
     with open(input_filepath, 'r', encoding='utf-8') as input_stream:
         for line in input_stream:
-            line = line.strip()
-            input.append(line)
+            processing_input.append(line.strip())
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
-        tokenized_txt = witokit.tokenize(' '.join(input), lowercase)
+        tokenized_txt = witokit.tokenize(' '.join(processing_input), lowercase)
         print(tokenized_txt, file=output_stream)
     return input_filepath
 
 
 if __name__ == '__main__':
-    BATCH_DIRPATH = '/home/kabbach/witokit/data/ud23/raw/'
-    OUTPUT_DIRPATH = '/home/kabbach/witokit/data/ud23/tokenized/'
+    BATCH_DIRPATH = '/Users/akb/Github/witokit/data/'
+    OUTPUT_DIRPATH = '/Users/akb/Github/witokit/data/'
     LOWERCASE = True
-    NUM_THREADS = 38
+    NUM_THREADS = 1
 
     assert os.path.exists(BATCH_DIRPATH)
     assert os.path.exists(OUTPUT_DIRPATH)

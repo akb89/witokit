@@ -10,3 +10,6 @@ data
 *.7z
 RELEASE.md
 dist/
+XP.md
+scripts/
+build/

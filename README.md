@@ -4,11 +4,11 @@
 [![Build][travis-image]][travis-url]
 [![MIT License][license-image]][license-url]
 
-Welcome to `WiToKit`, a Python toolkit to download and generate
-preprocessed Wikipedia dumps for NLP in a single .txt file, one
-sentence per line.
+Welcome to `WiToKit`, a Python toolkit to download and generate preprocessed Wikipedia dumps for all languages.
 
-*Note: WiToKit currently only supports `xx-pages-articles.xml.xx.bz2` Wikipedia archives corresponding to articles, templates, media/file descriptions, and primary meta-pages. Also, the preprocessing is currently only supported for English. If you'd like support in other languages, please create an issue on Github.*
+WiToKit can be used to converts a Wikipedia archive into a single .txt file, one (tokenized) sentence per line.
+
+*Note: WiToKit currently only supports `xx-pages-articles.xml.xx.bz2` Wikipedia archives corresponding to articles, templates, media/file descriptions, and primary meta-pages.*
 
 ## Install
 
@@ -65,6 +65,17 @@ witokit process \
   --output /abs/path/to/single/output/txt/file \
   --lower \  # if set, will lowercase text
   --num-threads num_cpu_threads
+```
+
+Preprocessing for all languages is performed with [Polyglot](https://github.com/aboSamoor/polyglot)
+
+### Sample
+You can also use WiToKit to sample the content of a preprocess .txt file, using:
+```bash
+witokit sample \
+  --input /abs/path/to/witokit/preprocessed/txt/file \
+  --percent \  # percentage of total lines to keep
+  --balance  # if set, will balance sampling, otherwise, will take top n sentences only
 ```
 
 [release-image]:https://img.shields.io/github/release/akb89/witokit.svg?style=flat-square
