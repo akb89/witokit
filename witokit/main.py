@@ -181,7 +181,8 @@ def _process(args):
             with open(tmp_filepath, 'r', encoding='utf-8') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
-                    print(line, file=output_strm)
+                    if len(line) > 0:
+                        print(line, file=output_strm)
         logger.info('Done processing content of Wikipedia archives')
         shutil.rmtree(futils.get_tmp_dirpath(args.wiki_input_dirpath))
 
