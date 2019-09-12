@@ -15,6 +15,7 @@ import logging
 import logging.config
 import pycld2
 
+from tqdm import tqdm
 from polyglot.text import Text
 from bs4 import BeautifulSoup
 
@@ -30,10 +31,12 @@ logging.config.dictConfig(
 
 logger = logging.getLogger(__name__)
 
+__all__ = ('tokenize')
+
 
 def _download_href(output_dirpath, wiki_dump_url, href):
     url = uutils.get_wiki_arxiv_url(wiki_dump_url, href)
-    logger.info('Downloading {}'.format(url))
+    logger.debug('Downloading {}'.format(url))
     output_filepath = futils.get_download_output_filepath(output_dirpath,
                                                           href)
     try:
@@ -49,13 +52,10 @@ def _parallel_download(wiki_arxiv_hrefs, wiki_dump_url, num_threads,
         _download_href_to_output_dir = functools.partial(_download_href,
                                                          output_dirpath,
                                                          wiki_dump_url)
-        total_arxivs = len(wiki_arxiv_hrefs)
-        arxiv_num = 0
-        for _ in pool.imap_unordered(_download_href_to_output_dir,
-                                     wiki_arxiv_hrefs):
-            arxiv_num += 1
-            logger.info('Downloaded {}/{} archives'.format(arxiv_num,
-                                                           total_arxivs))
+        for _ in tqdm(pool.imap_unordered(_download_href_to_output_dir,
+                                          wiki_arxiv_hrefs),
+                      total=len(wiki_arxiv_hrefs)):
+            continue
 
 
 def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
@@ -66,10 +66,20 @@ def _collect_wiki_arxiv_hrefs(wiki_dump_url, lang, date):
         html_doc = response.read()
         soup = BeautifulSoup(html_doc, 'html.parser')
         for link in soup.find_all('a'):
-            pattern = uutils.get_wikipedia_pattern(lang, date)
+            pattern = uutils.get_wikipedia_multi_pattern(lang, date)
             href = link.get('href')
             if re.match(pattern, href):
                 wiki_arxiv_hrefs.append(href)
+        if not wiki_arxiv_hrefs:
+            logger.info('No multi arxivs found. Trying for single arxiv')
+            # If wikipedia arxiv is too small, check for single arxiv
+            for link in soup.find_all('a'):
+                pattern = uutils.get_wikipedia_single_pattern(lang, date)
+                href = link.get('href')
+                if re.match(pattern, href):
+                    wiki_arxiv_hrefs.append(href)
+        if not wiki_arxiv_hrefs:
+            logger.warning('No wikipedia arxiv found')
     except urllib.error.HTTPError as error:
         logger.error('HTTPError using lang = \'{}\' and date = \'{}\'. '
                      'Could not retrieve any Wikipedia data at URL = {}'
@@ -102,12 +112,10 @@ def _extract(args):
     logger.info('Extracting .bz2 files from {}'.format(args.bz2_input_dirpath))
     bz2_arxivs = futils.get_bz2_arxivs(args.bz2_input_dirpath)
     total_arxivs = len(bz2_arxivs)
-    arxiv_num = 0
     with multiprocessing.Pool(args.num_threads) as pool:
-        for _ in pool.imap_unordered(_decompress_arxiv, bz2_arxivs):
-            arxiv_num += 1
-            logger.info('Extracted {}/{} archives'.format(arxiv_num,
-                                                          total_arxivs))
+        for _ in tqdm(pool.imap_unordered(_decompress_arxiv, bz2_arxivs),
+                      total=total_arxivs):
+            continue
 
 
 def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
@@ -123,25 +131,33 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
                                                  output_txt_filepath)
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
         logger.info('Writing output to file {}'.format(output_filepath))
-        for json_object in wikiextractor.extract(input_xml_filepath):
+        for json_object in tqdm(wikiextractor.extract(input_xml_filepath)):
             try:
-                text = Text(json_object['text'])  # lang will be guessed
-                for sent in text.sentences:
-                    if lowercase:
-                        tokens = [token.lower().strip() for token in sent.words]
-                    else:
-                        tokens = [token.strip() for token in sent.words]
-                    output_sent = ' '.join(tokens)
-                    print(output_sent, file=output_stream)
+                print(tokenize(json_object['text'], lowercase),
+                      file=output_stream)
             except UnicodeEncodeError as err:
                 logger.error('UnicodeEncodeError processing '
-                             'json_object[\'text\'] with spacy: {}'
+                             'json_object[\'text\'] with polyglot: {}'
                              .format(str(err)))
-            except ValueError as err:
-                logger.warning('Skipping empty text sequence')
-            except pycld2.error as err:
-                logger.warning('{}. Skipping sequence'.format(str(err)))
     return input_xml_filepath
+
+
+def tokenize(raw_text, lowercase):
+    """Tokenize raw_text with polyglot."""
+    output = []
+    try:
+        text = Text(raw_text)
+        for sent in text.sentences:
+            if lowercase:
+                tokens = [token.lower().strip() for token in sent.words]
+            else:
+                tokens = [token.strip() for token in sent.words]
+            output.append(' '.join(tokens))
+    except ValueError as err:
+        logger.debug('Skipping empty text sequence')
+    except pycld2.error as err:
+        logger.debug('{}. Skipping sequence'.format(str(err)))
+    return '\n'.join(output)
 
 
 def _process(args):
@@ -151,33 +167,60 @@ def _process(args):
         logger.info('Lowercasing archives')
     input_filepaths = futils.get_input_filepaths(args.wiki_input_dirpath)
     total_arxivs = len(input_filepaths)
-    arxiv_num = 0
-    left = input_filepaths
     with open(args.wiki_output_filepath, 'w', encoding='utf-8') as output_strm:
-        # with multiprocessing.Pool(processes=args.num_threads,
-        #                           maxtasksperchild=args.max_tasks) as pool:
-        # for wiki_input_filepath in input_filepaths:
-        #     _preprocess(args.wiki_output_filepath, args.lower, wiki_input_filepath)
         with multiprocessing.Pool(processes=args.num_threads) as pool:
             preprocess = functools.partial(
                 _preprocess, args.wiki_output_filepath, args.lower)
-            for process in pool.imap_unordered(preprocess, input_filepaths):
-                arxiv_num += 1
-                logger.info('Done processing content of {}'.format(process))
-                logger.info('Completed processing of {}/{} archives'
-                            .format(arxiv_num, total_arxivs))
-                left = [item for item in left if item != process]
-                logger.info('Left to process: {}'.format(left))
+            for _ in tqdm(pool.imap_unordered(preprocess, input_filepaths),
+                          total=total_arxivs):
+                continue
         # concatenate all .txt files into single output .txt file
         logger.info('Concatenating tmp files...')
-        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_output_filepath)
+        tmp_filepaths = futils.get_tmp_filepaths(args.wiki_input_dirpath)
         for tmp_filepath in tmp_filepaths:
-            with open(tmp_filepath, 'r') as tmp_stream:
+            with open(tmp_filepath, 'r', encoding='utf-8') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
                     print(line, file=output_strm)
         logger.info('Done processing content of Wikipedia archives')
-        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_output_filepath))
+        shutil.rmtree(futils.get_tmp_dirpath(args.wiki_input_dirpath))
+
+
+def _sample(args):
+    if not 0 < args.percent < 100:
+        raise Exception('Specified percent param should be in ]0, 100[')
+    logger.info('Sampling input file {}'.format(args.input_filepath))
+
+    logger.info('Counting number of lines in file...')
+    if args.input_filepath.endswith('.txt'):
+        input_basename = args.input_filepath.split('.txt')[0]
+    else:
+        input_basename = args.input_filepath
+    with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
+        count = sum(1 for x in input_stream)
+        logger.info('Total lines = {}'.format(count))
+    final_count = count * args.percent / 100
+    sampling = count / final_count
+    logger.info('Sampling file to {} lines with balance = {}'
+                .format(int(final_count), args.balance))
+    if args.balance:
+        output_filepath = '{}.sample{}.balanced.txt'.format(input_basename,
+                                                            args.percent)
+        with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
+            with open(output_filepath, 'w', encoding='utf-8') as output_stream:
+                for idx, line in enumerate(input_stream):
+                    if idx % round(sampling) == 0:
+                        print(line.strip(), file=output_stream)
+    else:
+        output_filepath = '{}.sample{}.txt'.format(input_basename,
+                                                   args.percent)
+        with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
+            with open(output_filepath, 'w', encoding='utf-8') as output_stream:
+                for idx, line in enumerate(input_stream):
+                    if idx >= final_count:
+                        break
+                    print(line.strip(), file=output_stream)
+    logger.info('Done sampling file to {}'.format(output_filepath))
 
 
 def main():
@@ -223,15 +266,20 @@ def main():
                                 help='absolute path to output .txt file')
     parser_process.add_argument('-l', '--lower', action='store_true',
                                 help='whether or not to lowercase splits')
-    parser_process.add_argument('-m', '--max-len', type=int, default=10000000,
-                                dest='max_length',
-                                help='spacy .max_length option for string '
-                                     'processing')
-    parser_process.add_argument('-t', '--max-tasks', type=int, default=0,
-                                help='max task per child for fine-grained '
-                                     'control over python multiprocessing '
-                                     'pool memory management')
     parser_process.add_argument('-n', '--num-threads', type=int, default=1,
                                 help='number of CPU threads to be used')
+    parser_sample = subparsers.add_parser(
+        'sample', formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help='sample a given .txt file deterministically')
+    parser_sample.set_defaults(func=_sample)
+    parser_sample.add_argument('-i', '--input', required=True,
+                               dest='input_filepath',
+                               help='absolute path to .txt file to sample')
+    parser_sample.add_argument('-p', '--percent', required=True, type=float,
+                               help='percentage of input file to keep')
+    parser_sample.add_argument('-b', '--balance', action='store_true',
+                               help='whether or not to balance the sampling'
+                                    'within the corpus or to take the top'
+                                    'p% sentences')
     args = parser.parse_args()
     args.func(args)
