@@ -100,7 +100,7 @@ def _download(args):
 
 def _decompress_arxiv(arxiv):
     inc_decompressor = bz2.BZ2Decompressor()
-    logger.info('Extracting archive {}'.format(arxiv))
+    logger.debug('Extracting archive {}'.format(arxiv))
     output_arxiv_filepath = arxiv.rsplit('.bz2')[0]
     with open(arxiv, 'rb') as arxiv_byte_stream:
         with open(output_arxiv_filepath, 'wb') as out_stream:
@@ -125,12 +125,12 @@ def _preprocess(output_txt_filepath, lowercase, input_xml_filepath):
     content with polyglot. Output one-sentence-per-line, lowercase, tokenized
     text.
     """
-    logger.info('Processing content of wikipedia file {}'
-                .format(input_xml_filepath))
+    logger.debug('Processing content of wikipedia file {}'
+                 .format(input_xml_filepath))
     output_filepath = futils.get_output_filepath(input_xml_filepath,
                                                  output_txt_filepath)
     with open(output_filepath, 'w', encoding='utf-8') as output_stream:
-        logger.info('Writing output to file {}'.format(output_filepath))
+        logger.debug('Writing output to file {}'.format(output_filepath))
         for json_object in tqdm(wikiextractor.extract(input_xml_filepath)):
             try:
                 print(tokenize(json_object['text'], lowercase),
@@ -177,7 +177,7 @@ def _process(args):
         # concatenate all .txt files into single output .txt file
         logger.info('Concatenating tmp files...')
         tmp_filepaths = futils.get_tmp_filepaths(args.wiki_input_dirpath)
-        for tmp_filepath in tmp_filepaths:
+        for tmp_filepath in tqdm(tmp_filepaths, total=len(tmp_filepaths)):
             with open(tmp_filepath, 'r', encoding='utf-8') as tmp_stream:
                 for line in tmp_stream:
                     line = line.strip()
