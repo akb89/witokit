@@ -200,17 +200,17 @@ def _sample(args):
     with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
         count = sum(1 for x in input_stream)
         logger.info('Total lines = {}'.format(count))
-    final_count = count * args.percent / 100
-    sampling = count / final_count
+    final_count = int(count * args.percent / 100)
+    sampling = int(count / final_count)
     logger.info('Sampling file to {} lines with balance = {}'
-                .format(int(final_count), args.balance))
+                .format(final_count, args.balance))
     if args.balance:
         output_filepath = '{}.sample{}.balanced.txt'.format(input_basename,
                                                             args.percent)
         with open(args.input_filepath, 'r', encoding='utf-8') as input_stream:
             with open(output_filepath, 'w', encoding='utf-8') as output_stream:
                 for idx, line in enumerate(input_stream):
-                    if idx % round(sampling) == 0:
+                    if idx % sampling == 0:
                         print(line.strip(), file=output_stream)
     else:
         output_filepath = '{}.sample{}.txt'.format(input_basename,
