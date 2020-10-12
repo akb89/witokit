@@ -1,6 +1,5 @@
 # WiToKit
 [![GitHub release][release-image]][release-url]
-[![PyPI release][pypi-image]][pypi-url]
 [![Build][travis-image]][travis-url]
 [![MIT License][license-image]][license-url]
 
@@ -12,13 +11,10 @@ WiToKit can be used to converts a Wikipedia archive into a single .txt file, one
 
 ## Install
 
-```bash
-pip3 install witokit
-```
+After a git clone, run:
 
-On python3.5 you may need to pass on the `--process-dependency-link` flag:
 ```bash
-pip3 install witokit --process-dependency-link
+python3 setup.py install
 ```
 
 ## Use
